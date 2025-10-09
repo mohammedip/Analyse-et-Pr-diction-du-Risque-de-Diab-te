@@ -4,6 +4,10 @@ import math
 import numpy as np
 from sklearn.impute import KNNImputer
 import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
 
 
 # traitement des valeur manquante  
@@ -19,7 +23,7 @@ new_df = pd.DataFrame(df_filled, columns=df.columns)
 
 new_df = new_df.drop(columns =["Unnamed: 0" ])
 
-df_no_outliers = df.copy()
+df_no_outliers = new_df.copy()
 
 
 #Pregnancies
@@ -76,4 +80,27 @@ Age_upper_band = Q3 + 2 * IQR
 df_no_outliers = df_no_outliers[(df_no_outliers["Age"] <= Age_upper_band)]
 
 
+scaler = StandardScaler()
+df_scaled = df_no_outliers.copy()
+df_scaled = scaler.fit_transform(df_no_outliers)
+df_scaled = pd.DataFrame(df_scaled, columns=df_no_outliers.columns, index=df_no_outliers.index)
+
+
+for k in range(2, 10):
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(df_scaled)
+    labels = kmeans.labels_
+    score = silhouette_score(df_scaled, labels)
+    print(f"K = {k}, Silhouette Score = {score}")
+
+
+
+kmeans = KMeans(n_clusters=2, random_state=42)
+df_scaled['Cluster'] = kmeans.fit_predict(df_scaled)    
+
+cluster_means = df_scaled.groupby('Cluster').mean()
+print(cluster_means)
+
+cluster_count = df_scaled['Cluster'].value_counts()
+print(cluster_count)
 
