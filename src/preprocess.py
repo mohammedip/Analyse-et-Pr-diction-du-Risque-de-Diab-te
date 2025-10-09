@@ -7,12 +7,13 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from sklearn.model_selection import train_test_split
 
 
 
 # traitement des valeur manquante  
 
-df = df.replace(0, np.nan)  
+df.loc[:, df.columns != "Pregnancies"] = df.loc[:, df.columns != "Pregnancies"].replace(0, np.nan)
 
 
 imputer = KNNImputer(n_neighbors=5)  
@@ -103,4 +104,15 @@ print(cluster_means)
 
 cluster_count = df_scaled['Cluster'].value_counts()
 print(cluster_count)
+
+high_risk_cluster = cluster_means[['Glucose', 'BMI', 'DiabetesPedigreeFunction']].mean(axis=1).idxmax()
+print("High Risk Cluster is:", high_risk_cluster)
+
+
+df_scaled['risk_category'] = df_scaled['Cluster'].apply(
+    lambda x: 1 if x == high_risk_cluster else 0
+)
+
+
+
 
