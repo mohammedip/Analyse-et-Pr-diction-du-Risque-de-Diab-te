@@ -7,7 +7,8 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split,cross_val_score
+from imblearn.over_sampling import RandomOverSampler
 
 
 
@@ -38,12 +39,10 @@ df_no_outliers = df_no_outliers[(df_no_outliers["Pregnancies"] <= Pregnancies_up
 Q1 = df_no_outliers["BloodPressure"].quantile(0.25)
 Q3 = df_no_outliers["BloodPressure"].quantile(0.75)
 IQR = Q3 - Q1
-BloodPressure_lower_band = Q1 - 1.7 * IQR
-BloodPressure_upper_band = Q3 + 1.7 * IQR
+BloodPressure_lower_band = Q1 - 2.2 * IQR
+BloodPressure_upper_band = Q3 + 2.2 * IQR
 
-df_no_outliers.loc[df_no_outliers["BloodPressure"] > BloodPressure_upper_band, "BloodPressure"] = np.log1p(df_no_outliers.loc[df_no_outliers["BloodPressure"] > BloodPressure_upper_band, "BloodPressure"])
-
-df_no_outliers = df_no_outliers[(df_no_outliers["BloodPressure"] >= BloodPressure_lower_band)]
+df_no_outliers = df_no_outliers[(df_no_outliers["BloodPressure"] >= BloodPressure_lower_band) & (df_no_outliers["BloodPressure"] <= BloodPressure_upper_band)]
 
 #SkinThickness
 Q1 = df_no_outliers["SkinThickness"].quantile(0.25)
@@ -113,6 +112,17 @@ df_scaled['risk_category'] = df_scaled['Cluster'].apply(
     lambda x: 1 if x == high_risk_cluster else 0
 )
 
+X = df_scaled.drop(["Cluster","risk_category"], axis=1)   
+y = df_scaled["risk_category"]    
 
+ros = RandomOverSampler()
+X_over, y_over = ros.fit_resample(X, y)
 
+print(y_over.value_counts())
 
+X_train, X_test, y_train, y_test = train_test_split(
+    X_over, y_over,
+    test_size=0.2,      
+    random_state=42,     
+    shuffle=True       
+)
